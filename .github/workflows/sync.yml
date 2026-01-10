@@ -12,17 +12,34 @@ jobs:
   sync:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout this repository
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
           fetch-tags: true
 
-      - uses: oven-sh/setup-bun@v2
+      - name: Checkout upstream repository
+        uses: actions/checkout@v4
+        with:
+          repository: moysklad/java-remap-1.2-sdk
+          path: upstream
+          fetch-depth: 0
+          fetch-tags: true
 
-      - uses: actions/setup-java@v4
+      - name: Configure git user
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 8
           cache: maven
 
-      - run: bun main.ts
+      - name: Sync and publish new tags
+        run: bun main.ts
