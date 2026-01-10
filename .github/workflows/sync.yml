@@ -43,3 +43,5 @@ jobs:
 
       - name: Sync and publish new tags
         run: bun main.ts
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
