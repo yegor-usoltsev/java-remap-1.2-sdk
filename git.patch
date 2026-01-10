@@ -1,0 +1,80 @@
+diff --git a/pom.xml b/pom.xml
+index 7c62bbc..0fec854 100644
+--- a/pom.xml
++++ b/pom.xml
+@@ -2,7 +2,7 @@
+ <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+     <modelVersion>4.0.0</modelVersion>
+ 
+-    <groupId>ru.moysklad.api</groupId>
++    <groupId>io.github.yegor-usoltsev</groupId>
+     <artifactId>api-remap-1.2-sdk</artifactId>
+     <version>9.0</version>
+ 
+@@ -142,9 +142,9 @@
+             <id>publishing-central</id>
+             <distributionManagement>
+                 <repository>
+-                    <id>ossrh</id>
+-                    <name>Maven Central Repository</name>
+-                    <url>${publishingRepo}service/local/staging/deploy/maven2/</url>
++                    <id>github</id>
++                    <name>GitHub Packages</name>
++                    <url>https://maven.pkg.github.com/yegor-usoltsev/api-remap-1.2-sdk</url>
+                 </repository>
+             </distributionManagement>
+             <build>
+@@ -159,15 +159,6 @@
+                             </excludes>
+                         </configuration>
+                     </plugin>
+-                    <plugin>
+-                        <groupId>org.sonatype.central</groupId>
+-                        <artifactId>central-publishing-maven-plugin</artifactId>
+-                        <version>0.7.0</version>
+-                        <extensions>true</extensions>
+-                        <configuration>
+-                            <publishingServerId>central</publishingServerId>
+-                        </configuration>
+-                    </plugin>
+                     <plugin>
+                         <groupId>org.apache.maven.plugins</groupId>
+                         <artifactId>maven-source-plugin</artifactId>
+@@ -197,20 +188,6 @@
+                             </execution>
+                         </executions>
+                     </plugin>
+-                    <plugin>
+-                        <groupId>org.apache.maven.plugins</groupId>
+-                        <artifactId>maven-gpg-plugin</artifactId>
+-                        <version>1.6</version>
+-                        <executions>
+-                            <execution>
+-                                <id>sign-artifacts</id>
+-                                <phase>verify</phase>
+-                                <goals>
+-                                    <goal>sign</goal>
+-                                </goals>
+-                            </execution>
+-                        </executions>
+-                    </plugin>
+                     <plugin>
+                         <groupId>org.codehaus.mojo</groupId>
+                         <artifactId>versions-maven-plugin</artifactId>
+diff --git a/src/main/java/ru/moysklad/remap_1_2/entities/products/Product.java b/src/main/java/ru/moysklad/remap_1_2/entities/products/Product.java
+index d98f0ef..877e848 100644
+--- a/src/main/java/ru/moysklad/remap_1_2/entities/products/Product.java
++++ b/src/main/java/ru/moysklad/remap_1_2/entities/products/Product.java
+@@ -23,6 +23,12 @@ import java.util.List;
+ @NoArgsConstructor
+ @EqualsAndHashCode(callSuper = true)
+ public class Product extends AbstractProduct implements SingleProductMarker, ConsignmentParentMarker, IEntityWithAttributes<Attribute>, HasImages {
++
++    private Double stock;
++    private Double reserve;
++    private Double inTransit;
++    private Double quantity;
++
+     /**
+      * Сотрудник-владелец
+      */
