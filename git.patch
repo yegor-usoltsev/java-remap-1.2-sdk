@@ -20,7 +20,7 @@ index 7c62bbc..0fec854 100644
 -                    <url>${publishingRepo}service/local/staging/deploy/maven2/</url>
 +                    <id>github</id>
 +                    <name>GitHub Packages</name>
-+                    <url>https://maven.pkg.github.com/yegor-usoltsev/api-remap-1.2-sdk</url>
++                    <url>https://maven.pkg.github.com/yegor-usoltsev/java-remap-1.2-sdk</url>
                  </repository>
              </distributionManagement>
              <build>
