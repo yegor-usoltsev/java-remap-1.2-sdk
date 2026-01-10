@@ -1,64 +1,85 @@
 import { $, semver } from "bun";
 
+// Constants
 const TAG_PREFIX = "api-remap-1.2-sdk-";
+const MIN_VERSION = ">=8.6";
+const UPSTREAM_DIR = "upstream";
 
-function ver(tag: string): string | null {
+// Extract semver version from tag, returns null if tag doesn't match expected format
+function parseVersion(tag: string): string | null {
   if (!tag.startsWith(TAG_PREFIX)) return null;
-  const match = tag.match(/-(\d+(?:\.\d+)*$)/);
+  const match = tag.match(/-(\d+(?:\.\d+)*)$/);
   if (!match) return null;
   const parts = match[1]!.split(".");
   while (parts.length < 3) parts.push("0");
-  const normalized = parts.join(".");
-  return normalized;
+  return parts.join(".");
 }
 
-console.log("🔍 Fetching upstream tags...");
-const upstreamTags = new Set(
-  (await Array.fromAsync($`cd upstream && git tag`.lines()))
-    .filter((tag) => tag.length)
+// Fetch git tags from a directory
+async function fetchTags(dir?: string): Promise<Set<string>> {
+  const cmd = dir ? $`cd ${dir} && git tag` : $`git tag`;
+  const tags = (await Array.fromAsync(cmd.lines())).filter((t) => t.length);
+  return new Set(tags);
+}
+
+// Filter and sort tags by version
+function filterAndSortTags(
+  upstream: Set<string>,
+  origin: Set<string>
+): string[] {
+  return Array.from(upstream.difference(origin))
     .filter((tag) => {
-      const v = ver(tag);
-      return v !== null && semver.satisfies(v, ">=8.6");
+      const v = parseVersion(tag);
+      return v !== null && semver.satisfies(v, MIN_VERSION);
     })
-);
-console.log(`📦 Found ${upstreamTags.size} upstream tags (>=8.6)`);
-
-console.log("🔍 Fetching origin tags...");
-const originTags = new Set(
-  (await Array.fromAsync($`git tag`.lines())).filter((tag) => tag.length)
-);
-console.log(`📦 Found ${originTags.size} origin tags`);
-
-console.log("🔄 Computing difference between upstream and origin...");
-const tags = Array.from(upstreamTags.difference(originTags)).toSorted((a, b) =>
-  semver.order(ver(a)!, ver(b)!)
-);
-
-if (!tags.length) {
-  console.log("✅ No new tags to process");
-  process.exit(0);
+    .toSorted((a, b) => semver.order(parseVersion(a)!, parseVersion(b)!));
 }
 
-console.log(
-  `🆕 Found ${tags.length} new tag(s) to process: ${tags.join(", ")}`
-);
-
-for (const tag of tags) {
+// Process a single tag: checkout, patch, deploy, push
+async function processTag(tag: string): Promise<void> {
   console.log(`\n🏷️  Processing tag ${tag}...`);
 
-  console.log(`🧹 Cleaning upstream directory and checking out ${tag}...`);
-  await $`cd upstream && git clean -ffdx && git reset --hard HEAD && git checkout ${tag}`;
+  console.log(`🧹 Cleaning and checking out ${tag}...`);
+  await $`cd ${UPSTREAM_DIR} && git clean -ffdx && git reset --hard HEAD && git checkout ${tag}`;
 
   console.log(`🩹 Applying git patch...`);
-  await $`cd upstream && git apply --3way ../git.patch`;
+  await $`cd ${UPSTREAM_DIR} && git apply --3way ../git.patch`;
 
-  console.log(`🚀 Deploying to Maven Central...`);
-  await $`cd upstream && mvn deploy -B -Dmaven.test.skip -Ppublishing-central`;
+  console.log(`🚀 Deploying to GitHub Packages...`);
+  await $`cd ${UPSTREAM_DIR} && mvn deploy -B -Dmaven.test.skip -Ppublishing-central`;
 
-  console.log(`📤 Pushing tag ${tag} to origin...`);
+  console.log(`📤 Pushing tag to origin...`);
   await $`git tag ${tag} && git push origin ${tag}`;
 
   console.log(`✅ Tag ${tag} processed successfully`);
 }
 
-console.log("\n🎉 All done!");
+// Main
+async function main(): Promise<void> {
+  console.log("🔍 Fetching tags...");
+  const [upstreamTags, originTags] = await Promise.all([
+    fetchTags(UPSTREAM_DIR),
+    fetchTags(),
+  ]);
+  console.log(
+    `📦 Found ${upstreamTags.size} upstream / ${originTags.size} origin tags`
+  );
+
+  console.log("🔄 Computing new tags to sync...");
+  const newTags = filterAndSortTags(upstreamTags, originTags);
+
+  if (!newTags.length) {
+    console.log("✅ No new tags to process");
+    return;
+  }
+
+  console.log(`🆕 Found ${newTags.length} new tag(s): ${newTags.join(", ")}`);
+
+  for (const tag of newTags) {
+    await processTag(tag);
+  }
+
+  console.log("\n🎉 All done!");
+}
+
+await main();
