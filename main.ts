@@ -1,8 +1,11 @@
 import { $, semver } from "bun";
 
-function ver(tag: string) {
+const TAG_PREFIX = "api-remap-1.2-sdk-";
+
+function ver(tag: string): string | null {
+  if (!tag.startsWith(TAG_PREFIX)) return null;
   const match = tag.match(/-(\d+(?:\.\d+)*$)/);
-  if (!match) throw new Error(`${tag} is not valid version tag`);
+  if (!match) return null;
   const parts = match[1]!.split(".");
   while (parts.length < 3) parts.push("0");
   const normalized = parts.join(".");
@@ -13,7 +16,10 @@ console.log("🔍 Fetching upstream tags...");
 const upstreamTags = new Set(
   (await Array.fromAsync($`cd upstream && git tag`.lines()))
     .filter((tag) => tag.length)
-    .filter((tag) => semver.satisfies(ver(tag), ">=8.6"))
+    .filter((tag) => {
+      const v = ver(tag);
+      return v !== null && semver.satisfies(v, ">=8.6");
+    })
 );
 console.log(`📦 Found ${upstreamTags.size} upstream tags (>=8.6)`);
 
@@ -25,7 +31,7 @@ console.log(`📦 Found ${originTags.size} origin tags`);
 
 console.log("🔄 Computing difference between upstream and origin...");
 const tags = Array.from(upstreamTags.difference(originTags)).toSorted((a, b) =>
-  semver.order(ver(a), ver(b))
+  semver.order(ver(a)!, ver(b)!)
 );
 
 if (!tags.length) {
