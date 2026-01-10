@@ -4,9 +4,29 @@ Fork of [moysklad/java-remap-1.2-sdk](https://github.com/moysklad/java-remap-1.2
 
 New upstream tags (≥8.6) are automatically synced and published weekly.
 
+## Authentication
+
+GitHub Packages requires authentication even for public packages. You need a personal access token (classic) with `read:packages` scope.
+
+[Create a personal access token](https://github.com/settings/tokens/new?scopes=read:packages)
+
 ## Installation
 
 ### Maven
+
+Add server credentials to your `~/.m2/settings.xml`:
+
+```xml
+<settings>
+  <servers>
+    <server>
+      <id>github</id>
+      <username>YOUR_GITHUB_USERNAME</username>
+      <password>YOUR_GITHUB_TOKEN</password>
+    </server>
+  </servers>
+</settings>
+```
 
 Add the repository to your `pom.xml`:
 
@@ -25,7 +45,7 @@ Add the dependency:
 <dependency>
   <groupId>io.github.yegor-usoltsev</groupId>
   <artifactId>api-remap-1.2-sdk</artifactId>
-  <version>${moysklad.version}</version>
+  <version>${moysklad.sdk.version}</version>
 </dependency>
 ```
 
@@ -37,6 +57,10 @@ Add the repository to your `build.gradle.kts`:
 repositories {
     maven {
         url = uri("https://maven.pkg.github.com/yegor-usoltsev/java-remap-1.2-sdk")
+        credentials {
+            username = project.findProperty("gpr.user") as String? ?: System.getenv("GITHUB_USERNAME")
+            password = project.findProperty("gpr.key") as String? ?: System.getenv("GITHUB_TOKEN")
+        }
     }
 }
 ```
@@ -44,7 +68,14 @@ repositories {
 Add the dependency:
 
 ```kotlin
-implementation("io.github.yegor-usoltsev:api-remap-1.2-sdk:$moyskladVersion")
+implementation("io.github.yegor-usoltsev:api-remap-1.2-sdk:$moyskladSdkVersion")
+```
+
+Configure credentials in `~/.gradle/gradle.properties`:
+
+```properties
+gpr.user=YOUR_GITHUB_USERNAME
+gpr.key=YOUR_GITHUB_TOKEN
 ```
 
 ## License
