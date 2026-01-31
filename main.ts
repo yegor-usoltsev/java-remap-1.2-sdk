@@ -26,20 +26,24 @@ async function fetchTags(dir?: string): Promise<Set<string>> {
 }
 
 // Filter and sort tags by version
-function filterAndSortTags(
-  upstream: Set<string>,
-  origin: Set<string>,
-): string[] {
-  return Array.from(upstream.difference(origin))
-    .map((tag) => parseVersion(tag))
-    .filter((v): v is string => v !== null && semver.satisfies(v, MIN_VERSION))
-    .toSorted((a, b) => semver.order(a, b));
+async function* filterAndSortTags(upstream: Set<string>, origin: Set<string>) {
+  const newTags = Array.from(upstream.difference(origin))
+    .filter((tag) => {
+      const v = parseVersion(tag);
+      return v !== null && semver.satisfies(v, MIN_VERSION);
+    })
+    .toSorted((a, b) => semver.order(parseVersion(a)!, parseVersion(b)!));
+  for (const tag of newTags) {
+    if (await hasMavenCentralArtifact(tag)) {
+      yield tag;
+    }
+  }
 }
 
 // Check if a specific version exists in Maven Central Repository
-async function hasMavenCentralArtifact(version: string): Promise<boolean> {
-  const groupPath = MAVEN_GROUP.replaceAll(".", "/");
-  const url = `${MAVEN_REPO_BASE}/${groupPath}/${MAVEN_ARTIFACT}/${version}/${MAVEN_ARTIFACT}-${version}.jar`;
+async function hasMavenCentralArtifact(tag: string): Promise<boolean> {
+  const v = tag.replace(TAG_PREFIX, "");
+  const url = `${MAVEN_REPO_BASE}/${MAVEN_GROUP.replaceAll(".", "/")}/${MAVEN_ARTIFACT}/${v}/${MAVEN_ARTIFACT}-${v}.jar`;
   const res = await fetch(url, { method: "HEAD" });
   return res.ok;
 }
@@ -66,28 +70,18 @@ async function processTag(tag: string): Promise<void> {
 // Main
 async function main(): Promise<void> {
   console.log("🔍 Fetching tags...");
-  const [rawUpstreamTags, originTags] = await Promise.all([
+  const [upstreamTags, originTags] = await Promise.all([
     fetchTags(UPSTREAM_DIR),
     fetchTags(),
   ]);
-  const upstreamTags = new Set(
-    (
-      await Promise.all(
-        Array.from(rawUpstreamTags).map(async (tag) => {
-          if (!tag.startsWith(TAG_PREFIX)) return null;
-          const match = tag.match(/-(\d+(?:\.\d+)*)$/);
-          if (!match) return null;
-          return (await hasMavenCentralArtifact(match[1]!)) ? tag : null;
-        }),
-      )
-    ).filter((tag): tag is string => tag !== null),
-  );
   console.log(
     `📦 Found ${upstreamTags.size} upstream / ${originTags.size} origin tags`,
   );
 
   console.log("🔄 Computing new tags to sync...");
-  const newTags = filterAndSortTags(upstreamTags, originTags);
+  const newTags = await Array.fromAsync(
+    filterAndSortTags(upstreamTags, originTags),
+  );
 
   if (!newTags.length) {
     console.log("✅ No new tags to process");
