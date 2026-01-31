@@ -4,6 +4,9 @@ import { $, semver } from "bun";
 const TAG_PREFIX = "api-remap-1.2-sdk-";
 const MIN_VERSION = ">=8.6";
 const UPSTREAM_DIR = "upstream";
+const MAVEN_GROUP = "ru.moysklad.api";
+const MAVEN_ARTIFACT = "api-remap-1.2-sdk";
+const MAVEN_REPO_BASE = "https://repo.maven.apache.org/maven2";
 
 // Extract semver version from tag, returns null if tag doesn't match expected format
 function parseVersion(tag: string): string | null {
@@ -25,7 +28,7 @@ async function fetchTags(dir?: string): Promise<Set<string>> {
 // Filter and sort tags by version
 function filterAndSortTags(
   upstream: Set<string>,
-  origin: Set<string>
+  origin: Set<string>,
 ): string[] {
   return Array.from(upstream.difference(origin))
     .filter((tag) => {
@@ -33,6 +36,17 @@ function filterAndSortTags(
       return v !== null && semver.satisfies(v, MIN_VERSION);
     })
     .toSorted((a, b) => semver.order(parseVersion(a)!, parseVersion(b)!));
+}
+
+function getMavenCentralJarUrl(version: string): string {
+  const groupPath = MAVEN_GROUP.replaceAll(".", "/");
+  return `${MAVEN_REPO_BASE}/${groupPath}/${MAVEN_ARTIFACT}/${version}/${MAVEN_ARTIFACT}-${version}.jar`;
+}
+
+async function hasMavenCentralArtifact(version: string): Promise<boolean> {
+  const url = getMavenCentralJarUrl(version);
+  const res = await fetch(url, { method: "HEAD" });
+  return res.ok;
 }
 
 // Process a single tag: checkout, patch, deploy, push
@@ -57,12 +71,23 @@ async function processTag(tag: string): Promise<void> {
 // Main
 async function main(): Promise<void> {
   console.log("🔍 Fetching tags...");
-  const [upstreamTags, originTags] = await Promise.all([
+  const [rawUpstreamTags, originTags] = await Promise.all([
     fetchTags(UPSTREAM_DIR),
     fetchTags(),
   ]);
+  const upstreamTags = new Set(
+    (
+      await Promise.all(
+        Array.from(rawUpstreamTags).map(async (tag) => {
+          const version = parseVersion(tag);
+          if (!version) return null;
+          return (await hasMavenCentralArtifact(version)) ? tag : null;
+        }),
+      )
+    ).filter((tag): tag is string => tag !== null),
+  );
   console.log(
-    `📦 Found ${upstreamTags.size} upstream / ${originTags.size} origin tags`
+    `📦 Found ${upstreamTags.size} upstream / ${originTags.size} origin tags`,
   );
 
   console.log("🔄 Computing new tags to sync...");
