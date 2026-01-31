@@ -31,20 +31,15 @@ function filterAndSortTags(
   origin: Set<string>,
 ): string[] {
   return Array.from(upstream.difference(origin))
-    .filter((tag) => {
-      const v = parseVersion(tag);
-      return v !== null && semver.satisfies(v, MIN_VERSION);
-    })
-    .toSorted((a, b) => semver.order(parseVersion(a)!, parseVersion(b)!));
+    .map((tag) => parseVersion(tag))
+    .filter((v): v is string => v !== null && semver.satisfies(v, MIN_VERSION))
+    .toSorted((a, b) => semver.order(a, b));
 }
 
-function getMavenCentralJarUrl(version: string): string {
-  const groupPath = MAVEN_GROUP.replaceAll(".", "/");
-  return `${MAVEN_REPO_BASE}/${groupPath}/${MAVEN_ARTIFACT}/${version}/${MAVEN_ARTIFACT}-${version}.jar`;
-}
-
+// Check if a specific version exists in Maven Central Repository
 async function hasMavenCentralArtifact(version: string): Promise<boolean> {
-  const url = getMavenCentralJarUrl(version);
+  const groupPath = MAVEN_GROUP.replaceAll(".", "/");
+  const url = `${MAVEN_REPO_BASE}/${groupPath}/${MAVEN_ARTIFACT}/${version}/${MAVEN_ARTIFACT}-${version}.jar`;
   const res = await fetch(url, { method: "HEAD" });
   return res.ok;
 }
@@ -79,9 +74,10 @@ async function main(): Promise<void> {
     (
       await Promise.all(
         Array.from(rawUpstreamTags).map(async (tag) => {
-          const version = parseVersion(tag);
-          if (!version) return null;
-          return (await hasMavenCentralArtifact(version)) ? tag : null;
+          if (!tag.startsWith(TAG_PREFIX)) return null;
+          const match = tag.match(/-(\d+(?:\.\d+)*)$/);
+          if (!match) return null;
+          return (await hasMavenCentralArtifact(match[1]!)) ? tag : null;
         }),
       )
     ).filter((tag): tag is string => tag !== null),
