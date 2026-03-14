@@ -13,13 +13,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout this repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
           fetch-tags: true
 
       - name: Checkout upstream repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: moysklad/java-remap-1.2-sdk
           path: upstream
@@ -35,7 +35,7 @@ jobs:
         uses: oven-sh/setup-bun@v2
 
       - name: Setup Java
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: 8
