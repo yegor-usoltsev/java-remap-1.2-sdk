@@ -80,4 +80,4 @@ gpr.key=YOUR_GITHUB_TOKEN
 
 ## License
 
-This repository is licensed under the [MIT License](LICENSE).
+The sync scripts and configuration in this repository are licensed under the [MIT License](LICENSE). The published SDK is MoySklad's code and remains under the Apache License 2.0 declared in the upstream [`pom.xml`](https://github.com/moysklad/java-remap-1.2-sdk/blob/master/pom.xml).
