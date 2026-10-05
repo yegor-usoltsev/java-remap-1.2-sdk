@@ -1,6 +1,6 @@
 # java-remap-1.2-sdk
 
-Fork of [moysklad/java-remap-1.2-sdk](https://github.com/moysklad/java-remap-1.2-sdk) published to GitHub Packages.
+A fork of [MoySklad's Java Remap 1.2 SDK](https://github.com/moysklad/java-remap-1.2-sdk), published to GitHub Packages so Java projects can consume it through Maven or Gradle.
 
 New upstream tags (≥8.6) are automatically synced and published weekly.
 
@@ -80,4 +80,4 @@ gpr.key=YOUR_GITHUB_TOKEN
 
 ## License
 
-See the [original repository](https://github.com/moysklad/java-remap-1.2-sdk) for license information.
+This repository is licensed under the [MIT License](LICENSE).
