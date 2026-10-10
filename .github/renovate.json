@@ -7,5 +7,11 @@
   ],
   "schedule": [
     "on the 10th day of the month"
+  ],
+  "packageRules": [
+    {
+      "matchDatasources": ["java-version"],
+      "enabled": false
+    }
   ]
 }
