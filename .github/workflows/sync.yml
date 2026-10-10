@@ -26,11 +26,6 @@ jobs:
           fetch-depth: 0
           fetch-tags: true
 
-      - name: Configure git user
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
 
@@ -42,6 +37,6 @@ jobs:
           cache: maven
 
       - name: Sync and publish new tags
-        run: bun main.ts
+        run: bun main.js
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
