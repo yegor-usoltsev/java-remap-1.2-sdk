@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout this repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@v7 # zizmor: ignore[artipacked] main.js pushes the new tags
         with:
           fetch-depth: 0
           fetch-tags: true
@@ -23,6 +23,7 @@ jobs:
         with:
           repository: moysklad/java-remap-1.2-sdk
           path: upstream
+          persist-credentials: false
           fetch-depth: 0
           fetch-tags: true
 
